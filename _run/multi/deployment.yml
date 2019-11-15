@@ -8,8 +8,9 @@ services:
       - port: 80
         as: 80
         accept:
-          - hello.192.168.99.132.nip.io
-          - hello.192.168.99.130.nip.io
+          - hello07.192.168.99.132.nip.io
+          - hello07.192.168.99.130.nip.io
+          - hello07.192.168.99.100.nip.io
         to:
           - global: true
 
@@ -21,8 +22,6 @@ profiles:
       disk: "1Gi"
   placement:
     westcoast:
-      attributes:
-        region: us-west
       pricing:
         web: 100u
 

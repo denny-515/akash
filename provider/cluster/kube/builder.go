@@ -277,7 +277,7 @@ func (b *ingressBuilder) rules() []extv1.IngressRule {
 			IngressRuleValue: extv1.IngressRuleValue{HTTP: httpRule},
 		})
 	}
-	b.log.Debug("provider/cluster/kube/builder: created rules:", rules)
+	b.log.With("rules", rules).Debug("provider/cluster/kube/builder: created rules:")
 	return rules
 }
 

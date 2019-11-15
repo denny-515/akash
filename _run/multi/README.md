@@ -30,6 +30,7 @@ __t1__: Start minikube
 ```sh
 $ cd $GOPATH/src/github.com/ovrclk/akash/_run/multi
 $ minikube start --cpus 4 --memory 4096
+# minikube start --cpus=4 --memory=4096 --vm-driver=virtualbox --addons='ingress' --addons='metrics-server'
 $ minikube addons enable ingress
 $ minikube addons enable metrics-server
 $ kubectl create -f rbac.yml

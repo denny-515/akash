@@ -61,9 +61,10 @@ func doStartCommand(session Session, cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	logger := log.NewFilter(session.Log(), log.AllowInfo(),
-		log.AllowDebugWith("module", "akash"))
-	// logger := log.NewFilter(session.Log(), log.AllowDebug())
+	// logger := log.NewFilter(session.Log(), log.AllowInfo(),
+	// logger := log.NewFilter(session.Log(),
+	// log.AllowDebugWith("module", "akash"))
+	logger := log.NewFilter(session.Log(), log.AllowDebug())
 
 	applog := logger.With("module", "akash")
 

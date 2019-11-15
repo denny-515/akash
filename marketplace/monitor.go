@@ -67,6 +67,7 @@ func (m *monitor) runListener(ch <-chan ctypes.ResultEvent, h Handler) {
 		case ed := <-ch:
 			evt, ok := ed.Data.(tmtmtypes.EventDataTx)
 			if !ok {
+				m.log.With("ed", ed).Debug("skipped")
 				continue
 			}
 
@@ -75,6 +76,8 @@ func (m *monitor) runListener(ch <-chan ctypes.ResultEvent, h Handler) {
 				m.log.Error("ProcessTx", "error", err)
 				continue
 			}
+
+			m.log.With("tx", tx.String()).Debug("event")
 
 			switch tx := tx.Payload.GetPayload().(type) {
 			case *types.TxPayload_TxSend:

@@ -89,6 +89,9 @@ func (e engine) processDeployments(state state.State, w txBuffer) error {
 	if err != nil {
 		return err
 	}
+	e.log.With("count", len(items.Items)).
+		With("method", "processDeployments").
+		Debug("found items")
 	for _, item := range items.Items {
 		if err := e.processDeployment(state, w, item); err != nil {
 			return err
@@ -103,6 +106,13 @@ func (e engine) processDeployment(state state.State, w txBuffer, deployment type
 	nextSeq := state.Deployment().SequenceFor(deployment.Address).Next()
 	height := state.Version()
 
+	log := e.log.With("method", "processDeployment").
+		With("nextSeq", nextSeq).
+		With("height", height).
+		With("deployment", deployment.Address.EncodeString())
+
+	log.With("deployment-state", deployment.State).Debug("processing")
+
 	// skip inactve deployments
 	if deployment.State != types.Deployment_ACTIVE {
 		return nil
@@ -113,8 +123,15 @@ func (e engine) processDeployment(state state.State, w txBuffer, deployment type
 		return err
 	}
 
+	log.With("num-groups", len(groups)).Debug("processing")
+
 	// process groups
 	for _, group := range groups {
+
+		log.With("group-id", group.Path()).
+			With("group-state", group.State.String()).
+			Debug("processing-group")
+
 		if group.State != types.DeploymentGroup_OPEN {
 			continue
 		}
@@ -125,12 +142,23 @@ func (e engine) processDeployment(state state.State, w txBuffer, deployment type
 			return err
 		}
 
+		log.With("group-id", group.Path()).
+			With("orders", len(orders)).
+			Debug("processing-group-orders")
+
 		// no active orders found for the deployment group
 		activeFound := false
 
 		// for each order for the deployment group
 		for _, order := range orders {
 			// try to create a lease for the order
+
+			log.With("group-id", group.Path()).
+				With("order-id", order.OrderID.String()).
+				With("order-state", order.State.String()).
+				With("order-end-at", order.EndAt).
+				Debug("processing-group-order")
+
 			if !activeFound && order.State == types.Order_OPEN || order.State == types.Order_MATCHED {
 				activeFound = true
 			}
@@ -197,6 +225,11 @@ func (e engine) processOrder(state state.State, w txBuffer, order *types.Order) 
 	if err != nil {
 		return err
 	}
+
+	e.log.With("order", order.Path()).
+		With("fulfillment", fulfillment.String()).
+		Debug("fulfillment")
+
 	if fulfillment == nil {
 		return nil
 	}

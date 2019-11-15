@@ -10,6 +10,7 @@ import (
 	manifestclient "github.com/ovrclk/akash/pkg/client/clientset/versioned"
 	"github.com/ovrclk/akash/provider/cluster"
 	"github.com/ovrclk/akash/types"
+	"github.com/ovrclk/akash/validation"
 	"github.com/tendermint/tendermint/libs/log"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -280,12 +281,18 @@ func (c *client) Inventory() ([]cluster.Node, error) {
 		return nil, err
 	}
 
+	c.log.With("count", len(mnodes.Items)).Info("metrics nodes found")
+
 	for _, mnode := range mnodes.Items {
 
 		knode, ok := knodes[mnode.Name]
 		if !ok {
+			c.log.With("mnode", mnode.Name).Info("not found")
 			continue
 		}
+
+		c.log.With("mnode", mnode.Name).
+			With("status", knode.Status).Info("node found")
 
 		cpu := knode.Status.Allocatable.Cpu().MilliValue()
 		cpu -= mnode.Usage.Cpu().MilliValue()
@@ -314,7 +321,16 @@ func (c *client) Inventory() ([]cluster.Node, error) {
 		nodes = append(nodes, cluster.NewNode(knode.Name, unit))
 	}
 
-	return nodes, nil
+	cfg := validation.Config()
+	return []cluster.Node{
+		cluster.NewNode("minikube", types.ResourceUnit{
+			CPU:    uint32(cfg.MaxUnitCPU * 100),
+			Memory: uint64(cfg.MaxUnitMemory * 100),
+			Disk:   uint64(cfg.MaxUnitDisk * 100),
+		}),
+	}, nil
+
+	// return nodes, nil
 }
 
 func (c *client) activeNodes() (map[string]*corev1.Node, error) {
@@ -323,12 +339,16 @@ func (c *client) activeNodes() (map[string]*corev1.Node, error) {
 		return nil, err
 	}
 
+	c.log.With("count", len(knodes.Items)).Info("found nodes")
+
 	retnodes := make(map[string]*corev1.Node)
 
 	for _, knode := range knodes.Items {
 		if !c.nodeIsActive(&knode) {
+			c.log.With("node", knode.Name).Debug("node not active")
 			continue
 		}
+		c.log.With("node", knode.Name).Debug("node active")
 		retnodes[knode.Name] = &knode
 	}
 	return retnodes, nil
@@ -338,12 +358,23 @@ func (c *client) nodeIsActive(node *corev1.Node) bool {
 	ready := false
 	issues := 0
 
+	// c.log.With("node", node.String()).Debug("nodeIsActive")
+
 	for _, cond := range node.Status.Conditions {
+
+		// c.log.
+		// 	With("node", node.Name).
+		// 	With("cond-type", cond.Type).
+		// 	With("cond-status", cond.Status).
+		// 	With("cond", cond.String()).
+		// 	Debug("condition")
+
 		switch cond.Type {
 
 		case corev1.NodeReady:
 
 			if cond.Status == corev1.ConditionTrue {
+				c.log.Debug("ready")
 				ready = true
 			}
 
@@ -358,6 +389,7 @@ func (c *client) nodeIsActive(node *corev1.Node) bool {
 		case corev1.NodeNetworkUnavailable:
 
 			if cond.Status != corev1.ConditionFalse {
+				c.log.Debug("uh-oh")
 
 				c.log.Error("node in poor condition",
 					"node", node.Name,
