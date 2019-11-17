@@ -2,6 +2,8 @@ package marketplace
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 
 	"github.com/ovrclk/akash/txutil"
 	"github.com/ovrclk/akash/types"
@@ -31,6 +33,9 @@ type monitor struct {
 }
 
 func NewMonitor(ctx context.Context, log log.Logger, bus tmclient.EventsClient, name string, handler Handler, query pubsub.Query) (Monitor, error) {
+
+	name = fmt.Sprintf("%v-%v", name, rand.Uint64())
+
 	m := &monitor{
 		name:    name,
 		handler: handler,
@@ -41,9 +46,8 @@ func NewMonitor(ctx context.Context, log log.Logger, bus tmclient.EventsClient, 
 		donech:  make(chan struct{}),
 	}
 
-	resC, err := m.bus.Subscribe(m.ctx, m.name, m.query.String())
+	resC, err := m.bus.Subscribe(m.ctx, m.name, m.query.String(), 500)
 	if err != nil {
-		<-m.donech
 		return nil, err
 	}
 

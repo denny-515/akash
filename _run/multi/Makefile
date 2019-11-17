@@ -7,6 +7,11 @@ NODES      = $(patsubst $(NODE_ROOT)/%.yaml,%,$(NODE_FILES))
 PROVIDER_CHART = akash-provider
 PROVIDERS      = us-west-1 us-west-2 us-east-1 us-east-2 # ap-southeast-1 ap-southeast-2
 
+clean-namespaces:
+	kubectl delete ns -l akash.network
+
+clean-kube: helm-delete-nodes helm-delete-providers clean-namespaces
+
 helm-install-nodes: $(patsubst %,helm-install-node-%,$(NODES))
 helm-upgrade-nodes: $(patsubst %,helm-upgrade-node-%,$(NODES))
 helm-check-nodes:   $(patsubst %,helm-check-node-%,$(NODES))

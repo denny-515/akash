@@ -201,7 +201,9 @@ func doProviderRunCommand(ses session.Session, cmd *cobra.Command, args []string
 		mclient := ses.Client()
 		mlog := ses.Log()
 		mhandler := event.MarketplaceTxHandler(bus)
-		errch <- common.MonitorMarketplace(ctx, mlog, mclient, mhandler)
+		err := common.MonitorMarketplace(ctx, mlog, mclient, mhandler)
+		ses.Log().With("err", err).Info("marketplace done")
+		errch <- err
 	}()
 
 	service, err := provider.NewService(ctx, psession, bus, clusterClient)
@@ -214,17 +216,22 @@ func doProviderRunCommand(ses session.Session, cmd *cobra.Command, args []string
 	go func() {
 		defer cancel()
 		<-service.Done()
+		ses.Log().Info("service done")
 		errch <- nil
 	}()
 
 	go func() {
 		defer cancel()
-		errch <- grpc.Run(ctx, ":9090", psession, clusterClient, service, service.ManifestHandler())
+		err := grpc.Run(ctx, ":9090", psession, clusterClient, service, service.ManifestHandler())
+		ses.Log().With("err", err).Info("grpc done")
+		errch <- err
 	}()
 
 	go func() {
 		defer cancel()
-		errch <- akash_json.Run(ctx, ses.Log(), ":3001", "localhost:9090")
+		err := akash_json.Run(ctx, ses.Log(), ":3001", "localhost:9090")
+		ses.Log().With("err", err).Info("json done")
+		errch <- err
 	}()
 
 	var reterr error

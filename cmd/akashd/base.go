@@ -22,6 +22,9 @@ func initEnv(path string) error {
 
 	viper.BindEnv("p2p.seeds")
 	viper.BindEnv("rpc.laddr")
+	viper.BindEnv("consensus.create_empty_blocks")
+	viper.BindEnv("consensus.create_empty_blocks_interval")
+	viper.SetDefault("consensus.create_empty_blocks", false)
 
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
